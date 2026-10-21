@@ -13,8 +13,7 @@ class Config
     public function __construct()
     {
         $configs = [];
-
-        foreach (glob(__DIR__ . '/Config/*.php') as $config) {
+        foreach (glob(__DIR__ . '/configs/*.php') as $config) {
             $configs[basename($config, '.php')] = require $config;
         }
 
