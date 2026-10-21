@@ -11,34 +11,41 @@
 <body class="bg-blue-100">
 <div class="flex flex-row justify-center mt-24 mx-5">
     <div class="flex flex-col ">
-        <div class="border rounded-md relative">
-            <input type="text" class="w-full md:min-w-md p-3 pr-24" id="search" placeholder="Start typing for suggesting..."
-                   autocomplete="off">
-            <button class="p-3 index-100 absolute right-0 border-l top-0 h-full bg-blue-100 rounded-r-md hover:bg-blue-300">
-                Search
-            </button>
+        <div class="relative">
+            <div class="border rounded-md relative">
+                <input type="text" class="w-full md:min-w-md p-3 pr-24" id="search"
+                       placeholder="Start typing for suggesting..."
+                       autocomplete="off">
+                <button id="search-btn"
+                        class="p-3 index-100 absolute right-0 border-l top-0 h-full bg-blue-100 rounded-r-md hover:bg-blue-300">
+                    Search
+                </button>
+            </div>
+            <div id="suggestion-result"
+                 class="absolute left-0 top-full z-20 w-full border rounded-md bg-white hidden max-h-100 overflow-auto">
+            </div>
         </div>
-        <div id="result" class="border rounded-md bg-white hidden max-h-100 overflow-auto">
+        <div id="search-result"
+             class="border rounded-md max-h-100 mt-25 bg-gray-500 text-center text-white p-20 hidden">
+        </div>
 
-        </div>
     </div>
 </div>
 </body>
 </html>
 
 <script>
-  const suggestionResult = document.getElementById('result')
+  const suggestionResult = document.getElementById('suggestion-result')
+  const searchResult = document.getElementById('search-result')
   const searchInput = document.getElementById('search')
+  const searchBtn = document.getElementById('search-btn')
 
-  async function suggestCountry (keywords) {
-
+  async function makeRequest (url) {
     try {
-      const response = await fetch(
-        '/suggest?keywords=' + encodeURIComponent(keywords)
-      )
+      const response = await fetch(url)
 
       if (!response.ok) {
-        console.log('Request failed:', response)
+        console.log('Request failed:', await response.text())
         return []
       }
 
@@ -46,9 +53,13 @@
 
     } catch (error) {
 
-      console.log('Suggesting country failed:', error.message)
+      console.error('Request error:', error)
       return []
     }
+  }
+
+  function suggestCountry (keywords) {
+    return makeRequest('/suggest?keywords=' + encodeURIComponent(keywords))
   }
 
   async function suggestionHandler (event) {
@@ -56,33 +67,39 @@
     suggestionResult.replaceChildren()
 
     if (inputValue.trim() === '') {
-      switchVisibility('hidden', 'visible')
+      switchVisibility(suggestionResult, 'hidden', 'visible')
       return
     }
     const result = await suggestCountry(inputValue)
 
+    if (result.length === 1) {
+      searchInput.dataset.country = result[0]['id']
+    } else {
+      delete searchInput.dataset.country
+    }
+
     if (result.length === 0) {
-      switchVisibility('hidden', 'visible')
+      switchVisibility(suggestionResult, 'hidden', 'visible')
       return
     }
-    switchVisibility('visible', 'hidden')
+    switchVisibility(suggestionResult, 'visible', 'hidden')
 
     result.forEach(function (country) {
       const divElement = document.createElement('div')
       const spanElement = document.createElement('span')
 
-      spanElement.textContent = country
+      spanElement.textContent = country['name']
       divElement.append(spanElement)
-      divElement.dataset.country = country
+      divElement.dataset.country = country['id']
       divElement.className = 'p-1 hover:bg-gray-300 rounded cursor-pointer'
 
       suggestionResult.appendChild(divElement)
     })
   }
 
-  function switchVisibility (add, remove) {
-    suggestionResult.classList.add(add)
-    suggestionResult.classList.remove(remove)
+  function switchVisibility (element, add, remove) {
+    element.classList.add(add)
+    element.classList.remove(remove)
   }
 
   searchInput.addEventListener('input', suggestionHandler)
@@ -94,7 +111,7 @@
 
     if (!insideSuggestionList && !insideSearchInput) {
       suggestionResult.replaceChildren()
-      switchVisibility('hidden', 'visible')
+      switchVisibility(suggestionResult, 'hidden', 'visible')
     }
   })
 
@@ -104,9 +121,27 @@
     if (!closestElement) {
       return
     }
-    searchInput.value = closestElement.dataset.country
+    searchInput.value = closestElement.textContent
+    searchInput.dataset.country = closestElement.dataset.country
     suggestionResult.replaceChildren()
-    switchVisibility('hidden', 'visible')
+    switchVisibility(suggestionResult, 'hidden', 'visible')
+  })
+
+  searchBtn.addEventListener('click', async function () {
+    searchResult.replaceChildren()
+    const result = await makeRequest('/search?countryId=' + encodeURIComponent(searchInput.dataset.country))
+
+    if (result.error) {
+      const spanElement = document.createElement('span')
+      spanElement.textContent = result.error
+      searchResult.appendChild(spanElement)
+      return
+    }
+    switchVisibility(searchResult, 'visible', 'hidden')
+    const spanElement = document.createElement('span')
+    spanElement.textContent = 'Country: ' + result.data.name
+    searchResult.appendChild(spanElement)
+
   })
 </script>
 

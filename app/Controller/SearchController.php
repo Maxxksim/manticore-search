@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Manticore\Manticore;
+use App\Model\Country;
 
 class SearchController
 {
@@ -26,10 +27,22 @@ class SearchController
         $result = $this->manticore->search->search("$keywords*")->get();
 
         foreach ($result as $hit) {
-            $suggestCountries[] = $hit->getData()['country'];
+            $suggestCountries[] = ['name' => $hit->getData()['name'], 'id' => $hit->getId()];
         }
 
         echo json_encode($suggestCountries);
+        exit();
+    }
+
+    public function searchCountryInfo(): void
+    {
+        $id = $_GET['countryId'];
+
+        if (!($country = Country::find((int)$id))) {
+            echo json_encode(['error' => 'Country not found.']);
+            exit();
+        }
+        echo json_encode(['data' => $country->getAttributes()]);
         exit();
     }
 }
