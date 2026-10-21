@@ -21,7 +21,7 @@ class Config
         $this->config = new Repository($configs);
     }
 
-    public function config(string $key, mixed $default = null): Repository
+    public function get(string $key, mixed $default = null): mixed
     {
         return $this->config->get($key, $default);
     }

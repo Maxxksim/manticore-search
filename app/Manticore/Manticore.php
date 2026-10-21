@@ -14,8 +14,8 @@ class Manticore
     public function __construct(private Config $config)
     {
         $config = [
-            'host' => $this->config->config('manticore.host'),
-            'port' => $this->config->config('manticore.port'),
+            'host' => $this->config->get('manticore.host'),
+            'port' => $this->config->get('manticore.port'),
         ];
         $this->client = new Client($config);
         $this->search = new Search($this->client);
