@@ -5,7 +5,9 @@
     "bramus/router": "^1.6",
     "symfony/http-foundation": "^8.1",
     "vlucas/phpdotenv": "^5.7",
-    "illuminate/config": "^13.38"
+    "illuminate/config": "^13.38",
+    "illuminate/database": "^13.38",
+    "ext-pdo": "*"
   },
   "config": {
     "allow-plugins": {
