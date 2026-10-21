@@ -4,39 +4,32 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Config\Config;
+use App\Manticore\Manticore;
 use Manticoresearch\Client;
 use Manticoresearch\Search;
 
 class SearchController
 {
-    private Client $client;
-    private Search $search;
-
-    public function __construct()
+    public function __construct(private Manticore $manticore)
     {
-        $config = ['host' => '127.0.0.1', 'port' => 9308];
-        $this->client = new Client($config);
-        $this->search = new Search($this->client);
-        $this->search->setTable('countries');
 
     }
 
     public function suggestCountries(): void
     {
+        $this->manticore->search->setTable('countries');
         $keywords = $_GET['keywords'];
         $suggestCountries = [];
-        $result = $this->search->search("$keywords*")->get();
 
-        header('Content-Type: application/json; charset=utf-8');
-
-        if ($result->getTotal() !== 0) {
-
-            foreach ($result as $hit) {
-                $suggestCountries[] = $hit->getData()['country'];
-            }
-
+        if (!trim($keywords)) {
             echo json_encode($suggestCountries);
             exit();
+        }
+        $result = $this->manticore->search->search("$keywords*")->get();
+
+        foreach ($result as $hit) {
+            $suggestCountries[] = $hit->getData()['country'];
         }
 
         echo json_encode($suggestCountries);
