@@ -35,6 +35,15 @@ services:
     ports:
       - "3306:3306"
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - manticore
 
 volumes:
   db_data:
