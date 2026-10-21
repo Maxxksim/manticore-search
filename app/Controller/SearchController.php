@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Config\Config;
 use App\Manticore\Manticore;
-use Manticoresearch\Client;
-use Manticoresearch\Search;
 
 class SearchController
 {
