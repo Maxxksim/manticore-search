@@ -6,9 +6,14 @@ namespace App\Controller;
 
 use App\Manticore\Manticore;
 use App\Model\Country;
+use Exception;
+use Manticoresearch\Utils;
 
 class SearchController
 {
+
+    use Utils;
+
     public function __construct(private Manticore $manticore)
     {
 
@@ -17,14 +22,22 @@ class SearchController
     public function suggestCountries(): void
     {
         $this->manticore->search->setTable('countries');
-        $keywords = $_GET['keywords'];
+        $keywords = trim($_GET['keywords']);
         $suggestCountries = [];
 
-        if (!trim($keywords)) {
+        if (!$keywords) {
             echo json_encode($suggestCountries);
             exit();
         }
-        $result = $this->manticore->search->search("$keywords*")->get();
+
+        $safeKeywords = self::escape($keywords);
+
+        try {
+            $result = $this->manticore->search->search("$safeKeywords*")->get();
+        } catch (Exception $e) {
+            echo json_encode($suggestCountries);
+            exit();
+        }
 
         foreach ($result as $hit) {
             $suggestCountries[] = ['name' => $hit->getData()['name'], 'id' => $hit->getId()];

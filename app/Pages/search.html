@@ -39,10 +39,13 @@
   const searchResult = document.getElementById('search-result')
   const searchInput = document.getElementById('search')
   const searchBtn = document.getElementById('search-btn')
+  let timer
+  let abortController
 
-  async function makeRequest (url) {
+  async function makeRequest (url, signal) {
+
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, { signal })
 
       if (!response.ok) {
         console.log('Request failed:', await response.text())
@@ -53,30 +56,43 @@
 
     } catch (error) {
 
+      if (error.name === 'AbortError') {
+        return null
+      }
       console.error('Request error:', error)
       return []
     }
   }
 
   function suggestCountry (keywords) {
-    return makeRequest('/suggest?keywords=' + encodeURIComponent(keywords))
+    abortController?.abort()
+    abortController = new AbortController()
+
+    return makeRequest('/suggest?keywords=' + encodeURIComponent(keywords), abortController.signal)
   }
 
   async function suggestionHandler (event) {
     const inputValue = event.target.value
-    suggestionResult.replaceChildren()
 
     if (inputValue.trim() === '') {
+      abortController?.abort()
+      suggestionResult.replaceChildren()
       switchVisibility(suggestionResult, 'hidden', 'visible')
       return
     }
     const result = await suggestCountry(inputValue)
+
+    if (result === null) {
+      return
+    }
 
     if (result.length === 1) {
       searchInput.dataset.country = result[0]['id']
     } else {
       delete searchInput.dataset.country
     }
+
+    suggestionResult.replaceChildren()
 
     if (result.length === 0) {
       switchVisibility(suggestionResult, 'hidden', 'visible')
@@ -102,14 +118,20 @@
     element.classList.remove(remove)
   }
 
-  searchInput.addEventListener('input', suggestionHandler)
-  searchInput.addEventListener('focus', suggestionHandler)
+  searchInput.addEventListener('input', function (event) {
+    debounce(() => suggestionHandler(event), 250)
+  })
+  searchInput.addEventListener('focus', function (event) {
+    debounce(() => suggestionHandler(event), 250)
+  })
 
   document.addEventListener('click', function (event) {
     const insideSearchInput = searchInput.contains(event.target)
     const insideSuggestionList = suggestionResult.contains(event.target)
 
     if (!insideSuggestionList && !insideSearchInput) {
+      clearTimeout(timer)
+      abortController?.abort()
       suggestionResult.replaceChildren()
       switchVisibility(suggestionResult, 'hidden', 'visible')
     }
@@ -123,6 +145,8 @@
     }
     searchInput.value = closestElement.textContent
     searchInput.dataset.country = closestElement.dataset.country
+    clearTimeout(timer)
+    abortController?.abort()
     suggestionResult.replaceChildren()
     switchVisibility(suggestionResult, 'hidden', 'visible')
   })
@@ -132,6 +156,7 @@
     const result = await makeRequest('/search?countryId=' + encodeURIComponent(searchInput.dataset.country))
 
     if (result.error) {
+      switchVisibility(searchResult, 'visible', 'hidden')
       const spanElement = document.createElement('span')
       spanElement.textContent = result.error
       searchResult.appendChild(spanElement)
@@ -143,5 +168,12 @@
     searchResult.appendChild(spanElement)
 
   })
+
+  function debounce (callback, delay) {
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      callback()
+    }, delay)
+  }
 </script>
 
