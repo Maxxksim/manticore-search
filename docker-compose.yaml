@@ -38,20 +38,23 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - manticore
+      db:
+        condition: service_healthy
+        restart: true
+      manticore:
+        condition: service_started
 
   caddy:
     image: caddy:2
     restart: unless-stopped
     ports:
-        - "80:80"
-        - "443:443"
-        - "443:443/udp"
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     volumes:
-        - ./conf/caddy:/etc/caddy
-        - caddy_data:/data
-        - caddy_config:/config
+      - ./conf/caddy:/etc/caddy
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - app
 
