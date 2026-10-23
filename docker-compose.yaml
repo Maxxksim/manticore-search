@@ -2,10 +2,7 @@ services:
   manticore:
     container_name: manticore
     image: manticoresearch/manticore
-    restart: no
-    ports:
-      - "9306:9306"
-      - "9308:9308"
+    restart: unless-stopped
     ulimits:
       nproc: 65535
       nofile:
@@ -32,13 +29,12 @@ services:
       test: [ 'CMD', 'mysqladmin', 'ping', '-p${DB_PASSWORD}' ]
       retries: 3
       timeout: 5s
-    ports:
-      - "3306:3306"
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "8000:8000"
     depends_on:
